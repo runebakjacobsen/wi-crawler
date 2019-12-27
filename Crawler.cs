@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Linq;
 using System.Collections.Generic;
 using System;
 using System.Net.Http;
@@ -12,20 +14,20 @@ namespace wi_crawler
             SetBaseUrl(seedUrl);
         }
 
-
         private string _baseUrl;
+
+        private void SetBaseUrl(string url)
+        {
+            Uri uri = new Uri(url);
+            _baseUrl = uri.Host;
+        }
+
         public string GetHTML(string url)
         {
             var httpClient = new HttpClient();
             var html = httpClient.GetStringAsync(url);
 
             return html.Result;
-        }
-
-        private void SetBaseUrl(string url)
-        {
-            Uri uri = new Uri(url);
-            _baseUrl = uri.Host;
         }
 
         public string GetContent(string html)
@@ -58,7 +60,7 @@ namespace wi_crawler
                 linkTos.Add(normalizedUrl);
             }
 
-            return linkTos;
+            return linkTos.Distinct().ToList();
         }
 
         private bool IsWebUrl(string url)
@@ -86,26 +88,46 @@ namespace wi_crawler
             return url;
         }
 
-        public string GetRobotsTxt(string baseUrl)
-        {
-            var httpClient = new HttpClient();
-            var robots = httpClient.GetStringAsync($"{baseUrl}/robots.txt");
 
-            return robots.Result;
+
+        public void Crawl(string url)
+        {
+
+
+            // for each url in frontier -- stop when visitedUrls === MAX_URLS_VISIT
+            //store html
+            // add url to already visited 
+            // wait 1 second 
+            var html = GetHTML(url);
+            // TODO - add entry to db
+            visitedUrls.Add(url);
+            Thread.Sleep(1000);
+
+
+
+
+
+            //
         }
 
+        private const int MAX_URLS_VISIT = 1000;
+        private List<string> visitedUrls = new List<string>();
         public async Task Frontier()
         {
-            // TODO store list with already visited domains
+
 
             // TODO Check if page passes near duplicate analysis, If it does not skip it, else add it 
 
             // TODO Extract “link-to” URLs 
-            // Normalize URL
-            // b. Check that it passes certain URL filter tests. E.g.:
-            // • Focused crawl: only crawl .dk
-            // • Obey robots.txt (freshness caveat)
-            // c. Check that not already in frontier
+            var linkTos = GetLinkTos(html);
+
+            var notVisitedLinks = linkTos.Except(visitedUrls);
+
+            var robotTxtHelper = new RobotTxtHelper(url);
+            var disallowedUrls = robotTxtHelper.DisallowedUrls();
+
+            var allowedLinks = notVisitedLinks.Except(disallowedUrls);
+
         }
     }
 }
