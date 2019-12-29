@@ -87,7 +87,17 @@ namespace wi_crawler
 
         private bool IsWebUrl(string url)
         {
-            if (url.StartsWith("mailto:") || url.StartsWith("tel:"))
+            if (url.StartsWith("mailto:") || url.StartsWith("tel:") || url.StartsWith("file:"))
+            {
+                return false;
+            }
+
+            if (!Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
+            {
+                return false;
+            }
+
+            if (TryCreatingUri(url) == null)
             {
                 return false;
             }
@@ -112,23 +122,31 @@ namespace wi_crawler
 
         public void Crawl()
         {
-            // for each url in frontier -- stop when visitedUrls === MAX_URLS_VISIT
-            //store html
-            // add url to already visited 
-            // wait 1 second 
+            var db = new CrawlingContext();
+
             int incrementor = 0;
             while (visitedUrls.Count() < MAX_URLS_VISIT && frontier.Count() > incrementor)
             {
                 var url = frontier[incrementor].AbsoluteUri;
-                System.Console.WriteLine(url);
+                var host = NormalizeHost(frontier[incrementor].Host);
+                System.Console.WriteLine($"{incrementor}  {url}");
                 var html = GetHTML(url);
+
+                var webpage = new Webpage()
+                {
+                    HtmlContent = html,
+                    Url = url,
+                    BaseDomain = host
+                };
+
+                db.Add(webpage);
+                db.SaveChanges();
+
                 visitedUrls.Add(url);
                 Frontier(url, html);
                 Thread.Sleep(1000);
                 incrementor++;
             }
-
-            // TODO - add entry to db
         }
 
         private const int MAX_URLS_VISIT = 1000;
@@ -155,10 +173,6 @@ namespace wi_crawler
             UpdateFrontier(allowedUris);
         }
 
-        private bool HostInFrontier(Uri x)
-        {
-            return frontier.Any(y => NormalizeHost(y.Host) == NormalizeHost(x.Host));
-        }
         private void UpdateFrontier(List<Uri> allowedUris)
         {
             var frontierHostCounts = FrontierDicWithHostAndCount();
@@ -169,18 +183,47 @@ namespace wi_crawler
                 string host = NormalizeHost(uri.Host);
                 bool isHostInFrontier = frontierHostCounts.ContainsKey(host);
 
+
+
                 if (!isHostInFrontier)
                 {
-                    frontier.Add(uri);
-                    frontierHostCounts = FrontierDicWithHostAndCount();
+                    if (Uri.IsWellFormedUriString(uri.AbsoluteUri, UriKind.Absolute))
+                    {
+                        frontier.Add(uri);
+                        frontierHostCounts = FrontierDicWithHostAndCount();
+                    }
                 }
-                else if (frontierHostCounts[host] < MAX_PAGES_SAME_DOMAIN && !frontier.Contains(uri))
+                else if (frontierHostCounts[host] < MAX_PAGES_SAME_DOMAIN && !IsUriInFrontier(uri))
                 {
-                    frontier.Add(uri);
-                    // check that link is not the same......
-                    frontierHostCounts = FrontierDicWithHostAndCount();
+                    if (Uri.IsWellFormedUriString(uri.AbsoluteUri, UriKind.Absolute))
+                    {
+                        frontier.Add(uri);
+                        frontierHostCounts = FrontierDicWithHostAndCount();
+                    }
                 }
             }
+        }
+
+        private bool IsUriInFrontier(Uri uri)
+        {
+            foreach (Uri frontierUri in frontier)
+            {
+
+                var result = CompareUris(uri, frontierUri);
+                var isUrisEqual = result == 0;
+
+                if (isUrisEqual)
+                {
+                    return true;
+                }
+
+            }
+            return false;
+        }
+
+        private int CompareUris(Uri uri1, Uri uri2)
+        {
+            return Uri.Compare(uri1, uri2, UriComponents.Host | UriComponents.PathAndQuery, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
         }
 
         private Dictionary<string, int> FrontierDicWithHostAndCount()
