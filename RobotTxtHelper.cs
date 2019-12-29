@@ -25,11 +25,9 @@ namespace wi_crawler
             if (robots.IsCompletedSuccessfully)
             {
                 return robots.Result;
-
             }
 
             return "";
-
         }
 
         public List<string> DisallowedUrls()

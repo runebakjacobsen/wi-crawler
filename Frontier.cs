@@ -28,7 +28,7 @@ namespace wi_crawler
             var robotTxtHelper = new RobotTxtHelper(webpage.Url);
             var disallowedUrls = robotTxtHelper.DisallowedUrls();
 
-            // TODO Match robotstxt urls with regex, it is not absoulte paths 
+            // TODO Match robotstxt urls with regex, it is not absoulte paths -- or match on uri relative paths? 
             var allowedLinks = notVisitedLinks.Except(disallowedUrls).ToList();
 
             var allowedUris = TransformToUris(allowedLinks);
@@ -136,33 +136,33 @@ namespace wi_crawler
 
         private void UpdateSeed(List<Uri> allowedUris)
         {
-            var frontierHostCounts = FrontierDicWithHostAndCount();
+            Dictionary<string, int> seedHostsCounts = SeedHostsAndCount();
 
             // TODO Refactor
             foreach (Uri uri in allowedUris)
             {
                 string host = Common.NormalizeHost(uri.Host);
-                bool isHostInFrontier = frontierHostCounts.ContainsKey(host);
+                bool isHostInSeed = seedHostsCounts.ContainsKey(host);
 
-                if (!isHostInFrontier)
+                if (!isHostInSeed)
                 {
                     Seed.Add(uri);
-                    frontierHostCounts = FrontierDicWithHostAndCount();
+                    seedHostsCounts = SeedHostsAndCount();
                 }
-                else if (frontierHostCounts[host] < MAX_PAGES_SAME_DOMAIN && !IsUriInFrontier(uri))
+                else if (seedHostsCounts[host] < MAX_PAGES_SAME_DOMAIN && !IsUriInSeed(uri))
                 {
                     Seed.Add(uri);
-                    frontierHostCounts = FrontierDicWithHostAndCount();
+                    seedHostsCounts = SeedHostsAndCount();
                 }
             }
         }
 
-        private Dictionary<string, int> FrontierDicWithHostAndCount()
+        private Dictionary<string, int> SeedHostsAndCount()
         {
             return Seed.GroupBy(x => Common.NormalizeHost(x.Host)).ToDictionary(x => x.Key, x => x.Count());
         }
 
-        private bool IsUriInFrontier(Uri uri)
+        private bool IsUriInSeed(Uri uri)
         {
             foreach (Uri SeedUri in Seed)
             {
