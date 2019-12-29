@@ -5,11 +5,13 @@ namespace wi_crawler
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-            var crawler = new Crawler();
-            await crawler.GetRobotsTxt("http://dr.dk");
+            var crawler = new Crawler("http://dr.dk");
+
+            crawler.Crawl();
+
         }
     }
 }
