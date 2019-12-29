@@ -12,7 +12,8 @@ namespace wi_crawler.Migrations
                 {
                     WebpageId = table.Column<int>(nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Html = table.Column<string>(nullable: true),
+                    HtmlContent = table.Column<string>(nullable: true),
+                    Content = table.Column<string>(nullable: true),
                     Url = table.Column<string>(nullable: true),
                     BaseDomain = table.Column<string>(nullable: true)
                 },

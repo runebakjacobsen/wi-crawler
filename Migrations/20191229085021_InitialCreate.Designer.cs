@@ -8,7 +8,7 @@ using wi_crawler;
 namespace wi_crawler.Migrations
 {
     [DbContext(typeof(CrawlingContext))]
-    [Migration("20191227124711_InitialCreate")]
+    [Migration("20191229085021_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,7 +26,10 @@ namespace wi_crawler.Migrations
                     b.Property<string>("BaseDomain")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Html")
+                    b.Property<string>("Content")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HtmlContent")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Url")

@@ -24,7 +24,10 @@ namespace wi_crawler.Migrations
                     b.Property<string>("BaseDomain")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Html")
+                    b.Property<string>("Content")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HtmlContent")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
