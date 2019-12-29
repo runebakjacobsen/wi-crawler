@@ -21,7 +21,15 @@ namespace wi_crawler
         {
             var httpClient = new HttpClient();
             var robots = httpClient.GetStringAsync($"{_baseUrl}/robots.txt");
-            return robots.Result;
+
+            if (robots.IsCompletedSuccessfully)
+            {
+                return robots.Result;
+
+            }
+
+            return "";
+
         }
 
         public List<string> DisallowedUrls()
