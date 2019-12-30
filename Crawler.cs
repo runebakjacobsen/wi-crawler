@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Threading.Tasks;
 using System.Threading;
@@ -10,7 +11,7 @@ namespace wi_crawler
 {
     public class Crawler
     {
-        private const int MAX_URLS_VISIT = 1000;
+        private const int MAX_URLS_VISIT = 5;
         private readonly Frontier frontier;
 
         public Crawler(string seedUrl)
@@ -62,7 +63,6 @@ namespace wi_crawler
         {
             var httpClient = new HttpClient();
             Task<string> html = httpClient.GetStringAsync(url);
-
             return TryGettingHtmlResult(html);
         }
 
@@ -78,7 +78,7 @@ namespace wi_crawler
             }
         }
 
-        private string StripHtmlTags(string html)
+        public string StripHtmlTags(string html)
         {
             if (string.IsNullOrEmpty(html)) return "";
 
@@ -94,14 +94,9 @@ namespace wi_crawler
 
         private string RemoveTabsAndNewlines(string text)
         {
-            string line = text.Replace("\t", "");
-            line = line.Replace(Environment.NewLine, "");
-
-            while (line.IndexOf("  ") >= 0)
-            {
-                line = line.Replace("  ", "");
-            }
-            return line;
+            var withoutSpecialChars = Regex.Replace(text, "[^a-øæåA-ÆØÅ0-9 ]", " ").Replace("|", " ");
+            var withoutExtraSpaces = Regex.Replace(withoutSpecialChars, @"\s +", " ");
+            return withoutExtraSpaces;
         }
     }
 }
