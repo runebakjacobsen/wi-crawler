@@ -6,7 +6,7 @@ namespace wi_crawler
 {
     public class Frontier
     {
-        private const int MAX_PAGES_SAME_DOMAIN = 5;
+        private const int MAX_PAGES_SAME_DOMAIN = 50;
 
         public List<Uri> Seed { get; set; }
         public List<string> VisitedUrls { get; set; }
@@ -76,7 +76,19 @@ namespace wi_crawler
                 return false;
             }
 
-            if (TryCreatingUri(url) == null)
+            Uri uri = TryCreatingUri(url);
+
+            if (uri == null)
+            {
+                return false;
+            }
+
+            if (url.EndsWith(".pdf"))
+            {
+                return false;
+            }
+
+            if (!uri.Host.EndsWith(".dk"))
             {
                 return false;
             }
