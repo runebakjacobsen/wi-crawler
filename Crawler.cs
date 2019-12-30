@@ -84,7 +84,24 @@ namespace wi_crawler
 
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
-            return HttpUtility.HtmlDecode(doc.DocumentNode.InnerText);
+
+            string decodedText = HttpUtility.HtmlDecode(doc.DocumentNode.InnerText).Trim();
+
+            var cleanContent = RemoveTabsAndNewlines(decodedText);
+
+            return cleanContent;
+        }
+
+        private string RemoveTabsAndNewlines(string text)
+        {
+            string line = text.Replace("\t", "");
+            line = line.Replace(Environment.NewLine, "");
+
+            while (line.IndexOf("  ") >= 0)
+            {
+                line = line.Replace("  ", "");
+            }
+            return line;
         }
     }
 }
