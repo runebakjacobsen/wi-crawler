@@ -10,6 +10,7 @@ namespace wi_crawler
     public class Indexer
     {
         private readonly IStemmer stemmer = new DanishStemmer();
+        private readonly Dictionary<string, LinkedList<int>> _invertedIndex = new Dictionary<string, LinkedList<int>>();
 
         private List<string> Stemmer(string content)
         {
@@ -34,38 +35,55 @@ namespace wi_crawler
 
         public void InvertedIndex()
         {
-            List<KeyValuePair<string, int>> termSequence = new List<KeyValuePair<string, int>>();
-
             using var db = new CrawlingContext();
-            var webpages = db.Webpages.OrderBy(x => x.WebpageId);
+            List<Webpage> webpages = db.Webpages.OrderBy(x => x.WebpageId).ToList();
+
+            List<KeyValuePair<string, int>> termSequences = GenerateTermSequences(webpages);
+
+            var sortedTermSequences = termSequences.OrderBy(x => x.Key).ThenBy(x => x.Value).ToList();
+
+            sortedTermSequences.ForEach(x => AddToInvertedIndex(x));
+        }
+
+        private List<KeyValuePair<string, int>> GenerateTermSequences(List<Webpage> webpages)
+        {
+            List<KeyValuePair<string, int>> termSequences = new List<KeyValuePair<string, int>>();
 
             foreach (Webpage webpage in webpages)
             {
                 var content = RemoveStopWords(webpage.Content);
                 var stemmedContent = Stemmer(content);
+                var termsForWebpage = GetTermsSequencesForWebpage(stemmedContent, webpage.WebpageId)
 
-                foreach (string word in stemmedContent)
-                {
-                    termSequence.Add(new KeyValuePair<string, int>(word, webpage.WebpageId));
-                }
+                termSequences.AddRange(termsForWebpage);
             }
 
-            var sorted = termSequence.OrderBy(x => x.Key).ThenBy(x => x.Value).ToList();
+            return termSequences;
+        }
 
-            Dictionary<string, LinkedList<int>> invertedIndex = new Dictionary<string, LinkedList<int>>();
+        private List<KeyValuePair<string, int>> GetTermsSequencesForWebpage(List<string> stemmedContent, int id)
+        {
+            List<KeyValuePair<string, int>> termSequences = new List<KeyValuePair<string, int>>();
 
-            foreach (var pair in sorted)
+            foreach (string word in stemmedContent)
             {
-                if (invertedIndex.ContainsKey(pair.Key))
-                {
-                    invertedIndex[pair.Key].AddLast(pair.Value);
-                }
-                else
-                {
-                    var list = new LinkedList<int>();
-                    list.AddLast(pair.Value);
-                    invertedIndex.Add(pair.Key, list);
-                }
+                termSequences.Add(new KeyValuePair<string, int>(word, id));
+            }
+
+            return termSequences;
+        }
+
+        private void AddToInvertedIndex(KeyValuePair<string, int> termSequence)
+        {
+            if (_invertedIndex.ContainsKey(termSequence.Key))
+            {
+                _invertedIndex[termSequence.Key].AddLast(termSequence.Value);
+            }
+            else
+            {
+                var list = new LinkedList<int>();
+                list.AddLast(termSequence.Value);
+                _invertedIndex.Add(termSequence.Key, list);
             }
         }
     }
