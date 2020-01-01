@@ -9,6 +9,7 @@ namespace wi_crawler
 {
     public class Indexer
     {
+        // TODO - make keypairs/dics to classes
         private readonly IStemmer stemmer = new DanishStemmer();
         private readonly Dictionary<string, LinkedList<int>> _invertedIndex = new Dictionary<string, LinkedList<int>>();
 
@@ -33,8 +34,26 @@ namespace wi_crawler
             return string.Join(" ", contentWithoutStopwords);
         }
 
+        private double TfIdfWeighting(double termFrequency, int totalWordsInDoc)
+        {
+            return LogTermFrequency(termFrequency) * InverseDocumentFrequency(termFrequency, totalWordsInDoc);
+        }
+        private double LogTermFrequency(double termFrequency)
+        {
+            if (termFrequency > 0)
+            {
+                return 1 + Math.Log10(termFrequency);
+            }
+
+            return 0;
+        }
+        private double InverseDocumentFrequency(double termFrequency, int totalWordsInDoc)
+        {
+            return Math.Log10(totalWordsInDoc / termFrequency);
+        }
         public void InvertedIndex()
         {
+            // TODO Save to db? 
             using var db = new CrawlingContext();
             List<Webpage> webpages = db.Webpages.OrderBy(x => x.WebpageId).ToList();
 
@@ -51,14 +70,58 @@ namespace wi_crawler
 
             foreach (Webpage webpage in webpages)
             {
+                TermFrequencyVectors(webpage);
+
+
                 var content = RemoveStopWords(webpage.Content);
                 var stemmedContent = Stemmer(content);
-                var termsForWebpage = GetTermsSequencesForWebpage(stemmedContent, webpage.WebpageId)
+                var termsForWebpage = GetTermsSequencesForWebpage(stemmedContent, webpage.WebpageId);
 
                 termSequences.AddRange(termsForWebpage);
             }
-
+            var qq = termFrequencyVectors.OrderByDescending(x => x.DocumentFrequencies.Count());
             return termSequences;
+        }
+
+        readonly List<TermFrequencyVector> termFrequencyVectors = new List<TermFrequencyVector>();
+        public void TermFrequencyVectors(Webpage webpage)
+        {
+
+            var content = RemoveStopWords(webpage.Content);
+            var stemmedContent = Stemmer(content);
+
+            var terms = new Dictionary<string, int>();
+            foreach (string word in stemmedContent)
+            {
+                if (terms.ContainsKey(word))
+                {
+                    terms[word]++;
+                }
+                else
+                {
+                    terms.Add(word, 1);
+                }
+            }
+
+            foreach (var term in terms)
+            {
+
+                if (termFrequencyVectors.Exists(x => x.Term.Equals(term.Key)))
+                {
+                    var test = termFrequencyVectors.Find(x => x.Term.Equals(term.Key));
+                    termFrequencyVectors.Remove(test);
+                    var doc = new DocumentFrequency() { WebpageId = webpage.WebpageId, TermFrequency = TfIdfWeighting(term.Value, stemmedContent.Count()) };
+                    test.DocumentFrequencies.Add(doc);
+                    termFrequencyVectors.Add(test);
+                }
+                else
+                {
+                    var doc = new DocumentFrequency() { WebpageId = webpage.WebpageId, TermFrequency = TfIdfWeighting(term.Value, stemmedContent.Count()) };
+                    var docList = new List<DocumentFrequency>() { doc };
+                    var test1 = new TermFrequencyVector() { Term = term.Key, DocumentFrequencies = docList };
+                    termFrequencyVectors.Add(test1);
+                }
+            }
         }
 
         private List<KeyValuePair<string, int>> GetTermsSequencesForWebpage(List<string> stemmedContent, int id)
@@ -69,7 +132,7 @@ namespace wi_crawler
             {
                 termSequences.Add(new KeyValuePair<string, int>(word, id));
             }
-
+            var test = termSequences.OrderBy(x => x.Key).ToList();
             return termSequences;
         }
 
