@@ -11,60 +11,60 @@ namespace wi_crawler
             using var db = new CrawlingContext();
             List<Webpage> webpages = db.Webpages.OrderBy(x => x.WebpageId).ToList();
 
-            List<KeyValuePair<string, int>> termSequences = GenerateTermSequences(webpages);
+            List<TermSequence> termSequences = GenerateTermSequences(webpages);
 
-            var sortedTermSequences = termSequences.OrderBy(x => x.Key).ThenBy(x => x.Value).ToList();
+            var sortedTermSequences = termSequences.OrderBy(x => x.Term).ThenBy(x => x.Webpage.WebpageId).ToList();
 
             sortedTermSequences.ForEach(x => AddToInvertedIndex(x));
         }
 
-        private List<KeyValuePair<string, int>> GenerateTermSequences(List<Webpage> webpages)
+        private List<TermSequence> GenerateTermSequences(List<Webpage> webpages)
         {
-            List<KeyValuePair<string, int>> termSequences = new List<KeyValuePair<string, int>>();
+            List<TermSequence> termSequences = new List<TermSequence>();
 
             foreach (Webpage webpage in webpages)
             {
                 var content = RemoveStopWords(webpage.Content);
                 var stemmedContent = Stemmer(content);
-                var termsForWebpage = GetTermsSequencesForWebpage(stemmedContent, webpage.WebpageId);
+                var termsForWebpage = GetTermsSequencesForWebpage(stemmedContent, webpage);
 
                 termSequences.AddRange(termsForWebpage);
             }
             return termSequences;
         }
 
-        private List<KeyValuePair<string, int>> GetTermsSequencesForWebpage(List<string> stemmedContent, int id)
+        private List<TermSequence> GetTermsSequencesForWebpage(List<string> stemmedContent, Webpage webpage)
         {
-            List<KeyValuePair<string, int>> termSequences = new List<KeyValuePair<string, int>>();
+            List<TermSequence> termSequences = new List<TermSequence>();
 
             foreach (string word in stemmedContent)
             {
-                termSequences.Add(new KeyValuePair<string, int>(word, id));
+                termSequences.Add(new TermSequence(word, webpage));
             }
 
             return termSequences;
         }
 
-        private void AddToInvertedIndex(KeyValuePair<string, int> termSequence)
+        private void AddToInvertedIndex(TermSequence termSequence)
         {
             using var db = new CrawlingContext();
-            if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Key)))
+
+            if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Term)))
             {
-                var termIndex = _invertedIndex.Find(x => x.Term.Equals(termSequence.Key));
-
-                Webpage webpage = db.Webpages.FirstOrDefault(x => x.WebpageId == termSequence.Value);
-
-                termIndex.Webpages.AddLast(webpage);
+                var termIndex = _invertedIndex.Find(x => x.Term.Equals(termSequence.Term));
+                termIndex.Webpages.AddLast(termSequence.Webpage);
             }
             else
             {
-                Webpage webpage = db.Webpages.FirstOrDefault(x => x.WebpageId == termSequence.Value);
                 var termIndex = new TermIndex
                 {
-                    Term = termSequence.Key
+                    Term = termSequence.Term
                 };
-                termIndex.Webpages.AddLast(webpage);
+                termIndex.Webpages.AddLast(termSequence.Webpage);
+
+                _invertedIndex.Add(termIndex);
             }
+            
             db.SaveChanges();
         }
     }
