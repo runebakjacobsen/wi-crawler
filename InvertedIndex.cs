@@ -48,7 +48,8 @@ namespace wi_crawler
         private void AddToInvertedIndex(KeyValuePair<string, int> termSequence)
         {
             using var db = new CrawlingContext();
-            if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Key)) {
+            if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Key)))
+            {
                 var termIndex = _invertedIndex.Find(x => x.Term.Equals(termSequence.Key));
 
                 Webpage webpage = db.Webpages.FirstOrDefault(x => x.WebpageId == termSequence.Value);
