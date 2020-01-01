@@ -11,7 +11,7 @@ namespace wi_crawler
 {
     public class Crawler
     {
-        private const int MAX_URLS_VISIT = 5;
+        private const int MAX_URLS_VISIT = 1000;
         private readonly Frontier frontier;
 
         public Crawler(string seedUrl)

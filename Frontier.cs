@@ -6,7 +6,7 @@ namespace wi_crawler
 {
     public class Frontier
     {
-        private const int MAX_PAGES_SAME_DOMAIN = 50;
+        private const int MAX_PAGES_SAME_DOMAIN = 5;
 
         public List<Uri> Seed { get; set; }
         public List<string> VisitedUrls { get; set; }
