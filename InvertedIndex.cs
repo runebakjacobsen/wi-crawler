@@ -4,7 +4,7 @@ namespace wi_crawler
 {
     public class InvertedIndex : Indexer
     {
-        private readonly Dictionary<string, LinkedList<int>> _invertedIndex = new Dictionary<string, LinkedList<int>>();
+        private readonly List<TermIndex> _invertedIndex = new List<TermIndex>();
 
         public void BuildInvertedIndex()
         {
@@ -47,16 +47,24 @@ namespace wi_crawler
 
         private void AddToInvertedIndex(KeyValuePair<string, int> termSequence)
         {
-            if (_invertedIndex.ContainsKey(termSequence.Key))
-            {
-                _invertedIndex[termSequence.Key].AddLast(termSequence.Value);
+            using var db = new CrawlingContext();
+            if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Key)) {
+                var termIndex = _invertedIndex.Find(x => x.Term.Equals(termSequence.Key));
+
+                Webpage webpage = db.Webpages.FirstOrDefault(x => x.WebpageId == termSequence.Value);
+
+                termIndex.Webpages.AddLast(webpage);
             }
             else
             {
-                var list = new LinkedList<int>();
-                list.AddLast(termSequence.Value);
-                _invertedIndex.Add(termSequence.Key, list);
+                Webpage webpage = db.Webpages.FirstOrDefault(x => x.WebpageId == termSequence.Value);
+                var termIndex = new TermIndex
+                {
+                    Term = termSequence.Key
+                };
+                termIndex.Webpages.AddLast(webpage);
             }
+            db.SaveChanges();
         }
     }
 }
