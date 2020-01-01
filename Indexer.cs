@@ -10,14 +10,15 @@ namespace wi_crawler
     public class Indexer
     {
         // TODO - make keypairs/dics to classes
-        private readonly IStemmer stemmer = new DanishStemmer();
+        private readonly IStemmer _stemmer = new DanishStemmer();
         private readonly Dictionary<string, LinkedList<int>> _invertedIndex = new Dictionary<string, LinkedList<int>>();
+        private readonly List<TermFrequencyVector> _termFrequencyVectors = new List<TermFrequencyVector>();
 
         private List<string> Stemmer(string content)
         {
             string[] words = content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            List<string> stemmedWords = stemmer.GetSteamWords(words).ToList();
+            List<string> stemmedWords = _stemmer.GetSteamWords(words).ToList();
 
             return stemmedWords;
         }
@@ -70,58 +71,74 @@ namespace wi_crawler
 
             foreach (Webpage webpage in webpages)
             {
-                TermFrequencyVectors(webpage);
-
-
                 var content = RemoveStopWords(webpage.Content);
                 var stemmedContent = Stemmer(content);
                 var termsForWebpage = GetTermsSequencesForWebpage(stemmedContent, webpage.WebpageId);
 
                 termSequences.AddRange(termsForWebpage);
             }
-            var qq = termFrequencyVectors.OrderByDescending(x => x.DocumentFrequencies.Count());
             return termSequences;
         }
 
-        readonly List<TermFrequencyVector> termFrequencyVectors = new List<TermFrequencyVector>();
-        public void TermFrequencyVectors(Webpage webpage)
+        public void TfIdfIndex()
         {
+            using var db = new CrawlingContext();
+            List<Webpage> webpages = db.Webpages.OrderBy(x => x.WebpageId).ToList();
 
+            foreach (Webpage webpage in webpages)
+            {
+                BuildTfIdfIndex(webpage);
+            }
+        }
+
+        private void BuildTfIdfIndex(Webpage webpage)
+        {
             var content = RemoveStopWords(webpage.Content);
             var stemmedContent = Stemmer(content);
 
-            var terms = new Dictionary<string, int>();
-            foreach (string word in stemmedContent)
+            Dictionary<string, int> termFrequencyLookup = CountTermFrequencies(stemmedContent);
+
+            foreach (var term in termFrequencyLookup)
             {
-                if (terms.ContainsKey(word))
+                var weighting = TfIdfWeighting(term.Value, stemmedContent.Count());
+                var documentFrequency = new DocumentFrequency(webpage.WebpageId, weighting);
+                AddOrUpdateTermFrequencyVectors(term, documentFrequency);
+            }
+        }
+
+        private Dictionary<string, int> CountTermFrequencies(List<string> content)
+        {
+            var termFrequencies = new Dictionary<string, int>();
+
+            foreach (string word in content)
+            {
+                if (termFrequencies.ContainsKey(word))
                 {
-                    terms[word]++;
+                    termFrequencies[word]++;
                 }
                 else
                 {
-                    terms.Add(word, 1);
+                    termFrequencies.Add(word, 1);
                 }
             }
 
-            foreach (var term in terms)
+            return termFrequencies;
+        }
+
+        private void AddOrUpdateTermFrequencyVectors(KeyValuePair<string, int> term, DocumentFrequency documentFrequency)
+        {
+            bool isTermsEqual(TermFrequencyVector x) => x.Term.Equals(term.Key);
+
+            if (_termFrequencyVectors.Exists(isTermsEqual))
             {
-
-                if (termFrequencyVectors.Exists(x => x.Term.Equals(term.Key)))
-                {
-                    var test = termFrequencyVectors.Find(x => x.Term.Equals(term.Key));
-                    termFrequencyVectors.Remove(test);
-                    var doc = new DocumentFrequency() { WebpageId = webpage.WebpageId, TermFrequency = TfIdfWeighting(term.Value, stemmedContent.Count()) };
-                    test.DocumentFrequencies.Add(doc);
-                    termFrequencyVectors.Add(test);
-                }
-                else
-                {
-                    var doc = new DocumentFrequency() { WebpageId = webpage.WebpageId, TermFrequency = TfIdfWeighting(term.Value, stemmedContent.Count()) };
-                    var docList = new List<DocumentFrequency>() { doc };
-                    var test1 = new TermFrequencyVector() { Term = term.Key, DocumentFrequencies = docList };
-                    termFrequencyVectors.Add(test1);
-                }
+                var matchingTermFrequencyVector = _termFrequencyVectors.Find(isTermsEqual);
+                matchingTermFrequencyVector.DocumentFrequencies.Add(documentFrequency);
+                return;
             }
+
+            var documentFrequencies = new List<DocumentFrequency>() { documentFrequency };
+            var termFrequencyVector = new TermFrequencyVector() { Term = term.Key, DocumentFrequencies = documentFrequencies };
+            _termFrequencyVectors.Add(termFrequencyVector);
         }
 
         private List<KeyValuePair<string, int>> GetTermsSequencesForWebpage(List<string> stemmedContent, int id)
@@ -132,7 +149,7 @@ namespace wi_crawler
             {
                 termSequences.Add(new KeyValuePair<string, int>(word, id));
             }
-            var test = termSequences.OrderBy(x => x.Key).ToList();
+
             return termSequences;
         }
 
