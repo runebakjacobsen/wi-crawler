@@ -8,8 +8,50 @@ namespace wi_crawler
     {
         private readonly List<TermFrequencyVector> _termFrequencyVectors = new List<TermFrequencyVector>();
 
+
+        private static double[][] TransformToTFIDFVectors(List<List<string>> stemmedDocs, Dictionary<string, double> vocabularyIDF)
+        {
+            // Transform each document into a vector of tfidf values.
+            List<List<double>> vectors = new List<List<double>>();
+            foreach (var doc in stemmedDocs)
+            {
+                List<double> vector = new List<double>();
+                foreach (var vocab in vocabularyIDF)
+                {
+                    // Term frequency = count how many times the term appears in this document.
+                    double tf = doc.Where(d => d == vocab.Key).Count();
+                    double tfidf = tf * vocab.Value;
+                    double tfidf = TfIdfWeighting(tf, ste)
+                    vector.Add(tfidf);
+                }
+                vectors.Add(vector);
+            }
+            return vectors.Select(v => v.ToArray()).ToArray();
+        }
+
+        public void CosineScore(string query)
+        {
+            List<double> scores = new List<double>();
+            List<double> length = new List<double>();
+
+            List<string> querySplit = query.Split(" ").ToList();
+
+            foreach (var term in querySplit)
+            {
+                var wtq = TfIdfWeighting(term, querySplit.Count());
+                var postingsList = _termFrequencyVectors.FindAll(x => x.Term.Equals(term));
+                foreach (var item in postingsList)
+                {
+
+                    scores.Add(item.DocumentFrequencies.)
+                }
+            }
+        }
+        private Dictionary<int, List<string>> _stemmedDocs;
         public void BuildTfIdfIndex()
         {
+            _stemmedDocs = GenerateStemmedDocuments();
+
             using var db = new CrawlingContext();
             List<Webpage> webpages = db.Webpages.OrderBy(x => x.WebpageId).ToList();
 
@@ -21,17 +63,48 @@ namespace wi_crawler
 
         private void AddWebpageToTfIdfIndex(Webpage webpage)
         {
-            var content = RemoveStopWords(webpage.Content);
-            var stemmedContent = Stemmer(content);
+            var stemmedContent = _stemmedDocs[webpage.WebpageId];
 
             Dictionary<string, int> termFrequencyLookup = CountTermFrequencies(stemmedContent);
 
             foreach (var term in termFrequencyLookup)
             {
-                var weighting = TfIdfWeighting(term.Value, stemmedContent.Count());
+                var weighting = TfIdfWeighting(term.Value, GetDocumentFrequency(term.Key));
                 var documentFrequency = new DocumentFrequency(webpage.WebpageId, weighting);
                 AddOrUpdateTermFrequencyVectors(term, documentFrequency);
             }
+        }
+
+        private int GetDocumentFrequency(string term)
+        {
+            int occurrence = 0;
+            foreach (var item in _stemmedDocs)
+            {
+                if (item.Value.Contains(term))
+                {
+                    occurrence++;
+                }
+            }
+
+            return occurrence;
+        }
+
+        private Dictionary<int, List<string>> GenerateStemmedDocuments()
+        {
+            using var db = new CrawlingContext();
+
+            var webpages = db.Webpages.ToList();
+
+            var stemmedDocs = new Dictionary<int, List<string>>();
+
+            foreach (var webpage in webpages)
+            {
+                var content = RemoveStopWords(webpage.Content);
+                var stemmedContent = Stemmer(content);
+                stemmedDocs.Add(webpage.WebpageId, stemmedContent);
+            }
+
+            return stemmedDocs;
         }
 
         private Dictionary<string, int> CountTermFrequencies(List<string> content)
@@ -69,9 +142,9 @@ namespace wi_crawler
             _termFrequencyVectors.Add(termFrequencyVector);
         }
 
-        private double TfIdfWeighting(double termFrequency, int totalWordsInDoc)
+        private double TfIdfWeighting(double termFrequency, int numberOfDocsContainingTerm)
         {
-            return LogTermFrequency(termFrequency) * InverseDocumentFrequency(termFrequency, totalWordsInDoc);
+            return LogTermFrequency(termFrequency) * InverseDocumentFrequency(termFrequency, numberOfDocsContainingTerm);
         }
 
         private double LogTermFrequency(double termFrequency)
@@ -84,9 +157,9 @@ namespace wi_crawler
             return 0;
         }
 
-        private double InverseDocumentFrequency(double termFrequency, int totalWordsInDoc)
+        private double InverseDocumentFrequency(double termFrequency, int numberOfDocsContainingTerm)
         {
-            return Math.Log10(totalWordsInDoc / termFrequency);
+            return Math.Log10(numberOfDocsContainingTerm / termFrequency);
         }
     }
 }
