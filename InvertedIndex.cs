@@ -84,10 +84,20 @@ namespace wi_crawler
                 var query2 = query.Substring(query.IndexOf("AND") + 3).Trim();
 
                 using var db = new CrawlingContext();
-                var termindex1 = db.TermIndexes.First(x => x.Term.Equals(query1));
-                var termIndex2 = db.TermIndexes.First(x => x.Term.Equals(query2));
 
-                var res = BooleanAndQuery(termindex1, termIndex2);
+                if (db.TermIndexes.Any(x => x.Term.Equals(query1)) && db.TermIndexes.Any(x => x.Term.Equals(query2)))
+                {
+
+                    var termindex1 = db.TermIndexes.First(x => x.Term.Equals(query1));
+                    var termIndex2 = db.TermIndexes.First(x => x.Term.Equals(query2));
+
+                    var res = BooleanAndQuery(termindex1, termIndex2);
+                }
+                else
+                {
+                    System.Console.WriteLine("No results");
+                    return;
+                }
 
             }
         }
