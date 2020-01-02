@@ -20,6 +20,9 @@ namespace wi_crawler.Migrations
                     b.Property<string>("Term")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("WebpageIds")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Term");
 
                     b.ToTable("TermIndexes");
@@ -40,24 +43,12 @@ namespace wi_crawler.Migrations
                     b.Property<string>("HtmlContent")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TermIndexTerm")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Url")
                         .HasColumnType("TEXT");
 
                     b.HasKey("WebpageId");
 
-                    b.HasIndex("TermIndexTerm");
-
                     b.ToTable("Webpages");
-                });
-
-            modelBuilder.Entity("wi_crawler.Webpage", b =>
-                {
-                    b.HasOne("wi_crawler.TermIndex", null)
-                        .WithMany("Webpages")
-                        .HasForeignKey("TermIndexTerm");
                 });
 #pragma warning restore 612, 618
         }

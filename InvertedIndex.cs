@@ -52,19 +52,24 @@ namespace wi_crawler
             if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Term)))
             {
                 var termIndex = _invertedIndex.Find(x => x.Term.Equals(termSequence.Term));
-                termIndex.Webpages.AddLast(termSequence.Webpage);
+                termIndex.WebpageIds.AddLast(termSequence.Webpage.WebpageId);
+
+                db.Update(termIndex);
             }
             else
             {
                 var termIndex = new TermIndex
                 {
-                    Term = termSequence.Term
+                    Term = termSequence.Term,
+
                 };
-                termIndex.Webpages.AddLast(termSequence.Webpage);
+                termIndex.WebpageIds.AddLast(termSequence.Webpage.WebpageId);
 
                 _invertedIndex.Add(termIndex);
+                db.Add(termIndex);
+
             }
-            
+
             db.SaveChanges();
         }
     }

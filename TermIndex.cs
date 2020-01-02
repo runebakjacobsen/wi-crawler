@@ -7,6 +7,6 @@ namespace wi_crawler
     {
         [Key]
         public string Term { get; set; }
-        public LinkedList<Webpage> Webpages { get; } = new LinkedList<Webpage>();
+        public LinkedList<int> WebpageIds { get; } = new LinkedList<int>();
     }
 }

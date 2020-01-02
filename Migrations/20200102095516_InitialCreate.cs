@@ -10,7 +10,8 @@ namespace wi_crawler.Migrations
                 name: "TermIndexes",
                 columns: table => new
                 {
-                    Term = table.Column<string>(nullable: false)
+                    Term = table.Column<string>(nullable: false),
+                    WebpageIds = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -26,33 +27,21 @@ namespace wi_crawler.Migrations
                     HtmlContent = table.Column<string>(nullable: true),
                     Content = table.Column<string>(nullable: true),
                     Url = table.Column<string>(nullable: true),
-                    BaseDomain = table.Column<string>(nullable: true),
-                    TermIndexTerm = table.Column<string>(nullable: true)
+                    BaseDomain = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Webpages", x => x.WebpageId);
-                    table.ForeignKey(
-                        name: "FK_Webpages_TermIndexes_TermIndexTerm",
-                        column: x => x.TermIndexTerm,
-                        principalTable: "TermIndexes",
-                        principalColumn: "Term",
-                        onDelete: ReferentialAction.Restrict);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Webpages_TermIndexTerm",
-                table: "Webpages",
-                column: "TermIndexTerm");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Webpages");
+                name: "TermIndexes");
 
             migrationBuilder.DropTable(
-                name: "TermIndexes");
+                name: "Webpages");
         }
     }
 }

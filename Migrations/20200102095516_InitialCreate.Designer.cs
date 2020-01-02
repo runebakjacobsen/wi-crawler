@@ -8,7 +8,7 @@ using wi_crawler;
 namespace wi_crawler.Migrations
 {
     [DbContext(typeof(CrawlingContext))]
-    [Migration("20200101210057_InitialCreate")]
+    [Migration("20200102095516_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,6 +20,9 @@ namespace wi_crawler.Migrations
             modelBuilder.Entity("wi_crawler.TermIndex", b =>
                 {
                     b.Property<string>("Term")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WebpageIds")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Term");
@@ -42,24 +45,12 @@ namespace wi_crawler.Migrations
                     b.Property<string>("HtmlContent")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TermIndexTerm")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Url")
                         .HasColumnType("TEXT");
 
                     b.HasKey("WebpageId");
 
-                    b.HasIndex("TermIndexTerm");
-
                     b.ToTable("Webpages");
-                });
-
-            modelBuilder.Entity("wi_crawler.Webpage", b =>
-                {
-                    b.HasOne("wi_crawler.TermIndex", null)
-                        .WithMany("Webpages")
-                        .HasForeignKey("TermIndexTerm");
                 });
 #pragma warning restore 612, 618
         }
