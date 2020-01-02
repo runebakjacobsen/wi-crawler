@@ -52,9 +52,13 @@ namespace wi_crawler
             if (_invertedIndex.Exists(x => x.Term.Equals(termSequence.Term)))
             {
                 var termIndex = _invertedIndex.Find(x => x.Term.Equals(termSequence.Term));
-                termIndex.WebpageIds.AddLast(termSequence.Webpage.WebpageId);
+                if (!termIndex.WebpageIds.Contains(termSequence.Webpage.WebpageId))
+                {
+                    termIndex.WebpageIds.AddLast(termSequence.Webpage.WebpageId);
+                    db.Update(termIndex);
+                    db.SaveChanges();
 
-                db.Update(termIndex);
+                }
             }
             else
             {
@@ -67,10 +71,54 @@ namespace wi_crawler
 
                 _invertedIndex.Add(termIndex);
                 db.Add(termIndex);
+                db.SaveChanges();
 
             }
+        }
 
-            db.SaveChanges();
+        public void BooleanQueryProcessing(string query)
+        {
+            if (query.Contains("AND"))
+            {
+                var query1 = query.Substring(0, query.IndexOf("AND")).Trim();
+                var query2 = query.Substring(query.IndexOf("AND") + 3).Trim();
+
+                using var db = new CrawlingContext();
+                var termindex1 = db.TermIndexes.First(x => x.Term.Equals(query1));
+                var termIndex2 = db.TermIndexes.First(x => x.Term.Equals(query2));
+
+                var res = BooleanAndQuery(termindex1, termIndex2);
+
+            }
+        }
+
+        public List<int> BooleanAndQuery(TermIndex termIndex1, TermIndex termIndex2)
+        {
+            var answer = new List<int>();
+
+            int incrementor1 = 0;
+            int incrementor2 = 0;
+            var index1 = termIndex1.WebpageIds.ToArray();
+            var index2 = termIndex2.WebpageIds.ToArray();
+            while (index1.Count() > incrementor1 && index2.Count() > incrementor2)
+            {
+                if (index1[incrementor1] == index2[incrementor2])
+                {
+                    answer.Add(index1[incrementor1]);
+                    incrementor1++;
+                    incrementor2++;
+                }
+                else if (index1[incrementor1] < index2[incrementor2])
+                {
+                    incrementor1++;
+                }
+                else
+                {
+                    incrementor2++;
+                }
+            }
+
+            return answer;
         }
     }
 }
