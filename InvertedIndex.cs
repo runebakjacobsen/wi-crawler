@@ -120,6 +120,22 @@ namespace wi_crawler
                     return;
                 }
             }
+            else if (query.StartsWith("NOT"))
+            {
+                var query1 = query.Substring(3).Trim();
+                using var db = new CrawlingContext();
+                if (db.TermIndexes.Any(x => x.Term.Equals(query1)))
+                {
+                    var termindex = db.TermIndexes.First(x => x.Term.Equals(query1));
+
+                    var res = BooleanNotQuery(termindex);
+                }
+                else
+                {
+                    System.Console.WriteLine("No results");
+                    return;
+                }
+            }
         }
 
         public List<int> BooleanAndQuery(TermIndex termIndex1, TermIndex termIndex2)
@@ -157,6 +173,15 @@ namespace wi_crawler
             var list2 = termIndex2.WebpageIds.ToList();
 
             return list1.Union(list2).OrderBy(x => x).ToList();
+        }
+
+        public List<int> BooleanNotQuery(TermIndex termIndex)
+        {
+            using var db = new CrawlingContext();
+
+            List<int> allWebpageIds = db.Webpages.Select(x => x.WebpageId).ToList();
+
+            return allWebpageIds.Except(termIndex.WebpageIds).ToList();
         }
     }
 }
