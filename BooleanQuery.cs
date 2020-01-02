@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,65 +10,51 @@ namespace wi_crawler
         {
             if (query.Contains("AND"))
             {
-                var query1 = query.Substring(0, query.IndexOf("AND")).Trim();
-                var query2 = query.Substring(query.IndexOf("AND") + 3).Trim();
-
-                using var db = new CrawlingContext();
-
-                if (db.TermIndexes.Any(x => x.Term.Equals(query1)) && db.TermIndexes.Any(x => x.Term.Equals(query2)))
-                {
-
-                    var termindex1 = db.TermIndexes.First(x => x.Term.Equals(query1));
-                    var termIndex2 = db.TermIndexes.First(x => x.Term.Equals(query2));
-
-                    var res = BooleanAndQuery(termindex1, termIndex2);
-                }
-                else
-                {
-                    System.Console.WriteLine("No results");
-                    return;
-                }
-
+                ProcessQuery(query, "AND", BooleanAndQuery);
             }
             else if (query.Contains("OR"))
             {
-                var query1 = query.Substring(0, query.IndexOf("OR")).Trim();
-                var query2 = query.Substring(query.IndexOf("OR") + 3).Trim();
-                using var db = new CrawlingContext();
-
-                if (db.TermIndexes.Any(x => x.Term.Equals(query1)) && db.TermIndexes.Any(x => x.Term.Equals(query2)))
-                {
-
-                    var termindex1 = db.TermIndexes.First(x => x.Term.Equals(query1));
-                    var termIndex2 = db.TermIndexes.First(x => x.Term.Equals(query2));
-
-                    var res = BooleanOrQuery(termindex1, termIndex2);
-                }
-                else
-                {
-                    System.Console.WriteLine("No results");
-                    return;
-                }
+                ProcessQuery(query, "OR", BooleanOrQuery);
             }
             else if (query.StartsWith("NOT"))
             {
-                var query1 = query.Substring(3).Trim();
-                using var db = new CrawlingContext();
-                if (db.TermIndexes.Any(x => x.Term.Equals(query1)))
-                {
-                    var termindex = db.TermIndexes.First(x => x.Term.Equals(query1));
-
-                    var res = BooleanNotQuery(termindex);
-                }
-                else
-                {
-                    System.Console.WriteLine("No results");
-                    return;
-                }
+                ProcessNotQuery(query);
             }
         }
 
-        public List<int> BooleanAndQuery(TermIndex termIndex1, TermIndex termIndex2)
+        private void ProcessQuery(string query, string queryType, Func<TermIndex, TermIndex, List<int>> queryTypeFunc)
+        {
+            var queries = SplitQuery(query, queryType);
+            var query1 = queries.ElementAt(0);
+            var query2 = queries.ElementAt(1);
+
+            using var db = new CrawlingContext();
+
+            bool isInDb(string query) => db.TermIndexes.Any(x => x.Term.Equals(query));
+
+            if (isInDb(query1) && isInDb(query2))
+            {
+                var termindex1 = db.TermIndexes.First(x => x.Term.Equals(query1));
+                var termIndex2 = db.TermIndexes.First(x => x.Term.Equals(query2));
+
+                var res = queryTypeFunc(termindex1, termIndex2);
+            }
+            else
+            {
+                Console.WriteLine("No results");
+                return;
+            }
+        }
+
+        private List<string> SplitQuery(string query, string splitWord)
+        {
+            var query1 = query.Substring(0, query.IndexOf(splitWord)).Trim();
+            var query2 = query.Substring(query.IndexOf(splitWord) + splitWord.Count()).Trim();
+
+            return new List<string>() { query1, query2 };
+        }
+
+        private List<int> BooleanAndQuery(TermIndex termIndex1, TermIndex termIndex2)
         {
             var index1 = termIndex1.WebpageIds;
             var index2 = termIndex2.WebpageIds;
@@ -75,15 +62,36 @@ namespace wi_crawler
             return index1.Intersect(index2).ToList();
         }
 
-        public List<int> BooleanOrQuery(TermIndex termIndex1, TermIndex termIndex2)
+        private List<int> BooleanOrQuery(TermIndex termIndex1, TermIndex termIndex2)
         {
-            var list1 = termIndex1.WebpageIds.ToList();
-            var list2 = termIndex2.WebpageIds.ToList();
+            var index1 = termIndex1.WebpageIds;
+            var index2 = termIndex2.WebpageIds;
 
-            return list1.Union(list2).OrderBy(x => x).ToList();
+            return index1.Union(index2).OrderBy(x => x).ToList();
         }
 
-        public List<int> BooleanNotQuery(TermIndex termIndex)
+        private void ProcessNotQuery(string query)
+        {
+            var query1 = query.Substring(3).Trim();
+
+            using var db = new CrawlingContext();
+
+            bool isInDb(string query) => db.TermIndexes.Any(x => x.Term.Equals(query));
+
+            if (isInDb(query1))
+            {
+                var termindex = db.TermIndexes.First(x => x.Term.Equals(query1));
+
+                var res = BooleanNotQuery(termindex);
+            }
+            else
+            {
+                Console.WriteLine("No results");
+                return;
+            }
+        }
+
+        private List<int> BooleanNotQuery(TermIndex termIndex)
         {
             using var db = new CrawlingContext();
 
