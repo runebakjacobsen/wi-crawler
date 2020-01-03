@@ -1,3 +1,4 @@
+using System.Numerics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,47 +8,32 @@ namespace wi_crawler
     public class TfIdfIndex : Indexer
     {
         private readonly List<TermFrequencyVector> _termFrequencyVectors = new List<TermFrequencyVector>();
-
-
-        private static double[][] TransformToTFIDFVectors(List<List<string>> stemmedDocs, Dictionary<string, double> vocabularyIDF)
-        {
-            // Transform each document into a vector of tfidf values.
-            List<List<double>> vectors = new List<List<double>>();
-            foreach (var doc in stemmedDocs)
-            {
-                List<double> vector = new List<double>();
-                foreach (var vocab in vocabularyIDF)
-                {
-                    // Term frequency = count how many times the term appears in this document.
-                    double tf = doc.Where(d => d == vocab.Key).Count();
-                    double tfidf = tf * vocab.Value;
-                    double tfidf = TfIdfWeighting(tf, ste)
-                    vector.Add(tfidf);
-                }
-                vectors.Add(vector);
-            }
-            return vectors.Select(v => v.ToArray()).ToArray();
-        }
+        private Dictionary<int, List<string>> _stemmedDocs;
 
         public void CosineScore(string query)
         {
-            List<double> scores = new List<double>();
+            Dictionary<int, double> scores = new Dictionary<int, double>();
             List<double> length = new List<double>();
 
             List<string> querySplit = query.Split(" ").ToList();
+            var termFrequencies = CountTermFrequencies(querySplit);
 
-            foreach (var term in querySplit)
+            foreach (KeyValuePair<string, int> termFrequency in termFrequencies)
             {
-                var wtq = TfIdfWeighting(term, querySplit.Count());
-                var postingsList = _termFrequencyVectors.FindAll(x => x.Term.Equals(term));
+                var docfreq = GetDocumentFrequency(termFrequency.Key);
+                var wtq = TfIdfWeighting(termFrequency.Value, docfreq);
+                var postingsList = _termFrequencyVectors.FindAll(x => x.Term.Equals(termFrequency.Key));
                 foreach (var item in postingsList)
                 {
-
-                    scores.Add(item.DocumentFrequencies.)
+                    foreach (var item1 in item.DocumentFrequencies)
+                    {
+                        scores.Add(item1.WebpageId, item1.TermWeight);
+                    }
                 }
             }
+
+            // * We need to normalize the scores by the length. I do not know what length they are referring to, so I am leaving this for now
         }
-        private Dictionary<int, List<string>> _stemmedDocs;
         public void BuildTfIdfIndex()
         {
             _stemmedDocs = GenerateStemmedDocuments();

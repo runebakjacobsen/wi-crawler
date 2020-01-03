@@ -2,13 +2,13 @@ namespace wi_crawler
 {
     public class DocumentFrequency
     {
-        public DocumentFrequency(int webpageId, double termFrequency)
+        public DocumentFrequency(int webpageId, double termWeight)
         {
             WebpageId = webpageId;
-            TermFrequency = termFrequency;
+            TermWeight = termWeight;
         }
 
         public int WebpageId { get; set; }
-        public double TermFrequency { get; set; }
+        public double TermWeight { get; set; }
     }
 }
