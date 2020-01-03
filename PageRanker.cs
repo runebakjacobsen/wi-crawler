@@ -23,16 +23,17 @@ namespace wi_crawler
             {
                 var rowWebpage = webpages.Find(x => x.WebpageId == i + 1);
                 var rowUrl = new Uri(rowWebpage.Url);
+                var frontier = new Frontier();
+                var outgoingLinks = frontier.GetLinkTos(rowWebpage.HtmlContent).Select(x => new Uri(x)).ToList();
                 for (int j = 0; j < colLength; j++)
                 {
-                    var frontier = new Frontier();
                     var colWebpage = webpages.Find(x => x.WebpageId == j + 1);
-                    var outgoingLinks = frontier.GetLinkTos(colWebpage.HtmlContent).Select(x => new Uri(x)).ToList();
+                    var colUrl = new Uri(colWebpage.Url);
                     double probability = 0;
 
                     foreach (var link in outgoingLinks)
                     {
-                        if (frontier.CompareUris(link, rowUrl) == 0)
+                        if (frontier.CompareUris(link, colUrl) == 0)
                         {
                             probability = (double)1 / (double)outgoingLinks.Count();
                         }
