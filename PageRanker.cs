@@ -38,11 +38,32 @@ namespace wi_crawler
                             probability = (double)1 / (double)outgoingLinks.Count();
                         }
                     }
-
-
                     matrix[i, j] = probability;
                 }
             }
+
+            //normalize it, we have more links in html thhan in db, we need to make the matrix rows sum to 1
+            for (int i = 0; i < rowLength; i++)
+            {
+                int count = 0;
+                for (int j = 0; j < colLength; j++)
+                {
+                    if (matrix[i, j] != 0)
+                    {
+                        count++;
+                    }
+                }
+
+                for (int j = 0; j < colLength; j++)
+                {
+                    if (matrix[i, j] != 0)
+                    {
+                        matrix[i, j] = (double)1 / (double)count;
+                    }
+                }
+            }
+
+
 
             for (int i = 0; i < rowLength; i++)
             {
