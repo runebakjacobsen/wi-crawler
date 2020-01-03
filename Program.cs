@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using System;
+﻿using System;
+using System.Linq;
 
 namespace wi_crawler
 {
@@ -8,10 +8,18 @@ namespace wi_crawler
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-            var crawler = new Crawler("http://dr.dk");
+            var crawler = new Crawler("http://tv2.dk");
 
-            crawler.Crawl();
+            //crawler.Crawl();
 
+            //var test = new InvertedIndex();
+            //test.BuildInvertedIndex();
+            //var test = new BooleanQuery();
+            // test.BooleanQueryProcessing("brand AND naturbrand");
+
+            var test = new PageRanker();
+            test.BuildMatrix();
+            test.Transition();
         }
     }
 }

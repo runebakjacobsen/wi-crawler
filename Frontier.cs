@@ -6,7 +6,7 @@ namespace wi_crawler
 {
     public class Frontier
     {
-        private const int MAX_PAGES_SAME_DOMAIN = 5;
+        private const int MAX_PAGES_SAME_DOMAIN = 10;
 
         public List<Uri> Seed { get; set; }
         public List<string> VisitedUrls { get; set; }
@@ -36,7 +36,7 @@ namespace wi_crawler
             UpdateSeed(allowedUris);
         }
 
-        private List<string> GetLinkTos(string html)
+        public List<string> GetLinkTos(string html)
         {
             var htmlDocument = new HtmlDocument();
             htmlDocument.LoadHtml(html);
@@ -190,7 +190,7 @@ namespace wi_crawler
             return false;
         }
 
-        private int CompareUris(Uri uri1, Uri uri2)
+        public int CompareUris(Uri uri1, Uri uri2)
         {
             return Uri.Compare(uri1, uri2, UriComponents.Host | UriComponents.PathAndQuery, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
         }
