@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace wi_crawler
 {
@@ -9,6 +10,7 @@ namespace wi_crawler
         //* Lets save it in the db or something? Then we can always implement it later.. 
 
         double[,] transitionProbabilityMatrix;
+        double[] probabilityDistribution;
 
         public void buildMatrix()
         {
@@ -63,7 +65,9 @@ namespace wi_crawler
                 }
             }
 
-
+            transitionProbabilityMatrix = matrix;
+            probabilityDistribution = new double[rowLength];
+            probabilityDistribution[0] = 1;
 
             for (int i = 0; i < rowLength; i++)
             {
@@ -73,7 +77,21 @@ namespace wi_crawler
                 }
                 Console.Write(Environment.NewLine + Environment.NewLine);
             }
-            Console.ReadLine();
         }
+
+
+        public void transitions()
+        {
+
+            var matrixBuilder = Matrix<double>.Build;
+            var matrix = matrixBuilder.DenseOfArray(transitionProbabilityMatrix);
+            var vectorBuilder = Vector<double>.Build;
+            var vector = vectorBuilder.DenseOfArray(probabilityDistribution);
+
+            var res = vector * matrix;
+
+        }
+
+
     }
 }
