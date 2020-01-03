@@ -6,13 +6,10 @@ namespace wi_crawler
 {
     public class PageRanker
     {
-        //* Just make it possible to get the pagerank for domain
-        //* Lets save it in the db or something? Then we can always implement it later.. 
+        private double[,] transitionProbabilityMatrix;
+        private double[] probabilityDistribution;
 
-        double[,] transitionProbabilityMatrix;
-        double[] probabilityDistribution;
-
-        public void buildMatrix()
+        public void BuildMatrix()
         {
             using var db = new CrawlingContext();
 
@@ -69,29 +66,23 @@ namespace wi_crawler
             probabilityDistribution = new double[rowLength];
             probabilityDistribution[0] = 1;
 
-            for (int i = 0; i < rowLength; i++)
-            {
-                for (int j = 0; j < colLength; j++)
-                {
-                    Console.Write(string.Format("{0} ", matrix[i, j]));
-                }
-                Console.Write(Environment.NewLine + Environment.NewLine);
-            }
         }
 
 
-        public void transitions()
+        public void Transition()
         {
 
             var matrixBuilder = Matrix<double>.Build;
             var matrix = matrixBuilder.DenseOfArray(transitionProbabilityMatrix);
-            var vectorBuilder = Vector<double>.Build;
-            var vector = vectorBuilder.DenseOfArray(probabilityDistribution);
-
-            var res = vector * matrix;
-
+            var resarray = new double[probabilityDistribution.Count()];
+            while (!Enumerable.SequenceEqual(probabilityDistribution, resarray))
+            {
+                probabilityDistribution = resarray;
+                var vectorBuilder = Vector<double>.Build;
+                var vector = vectorBuilder.DenseOfArray(probabilityDistribution);
+                var res = vector * matrix;
+                resarray = res.ToArray();
+            }
         }
-
-
     }
 }
